@@ -2012,7 +2012,7 @@ static void cb_s3_flush(const void *data, size_t bytes,
                                                ctx->date_key);
     }
     if (chunk == NULL) {
-        flb_plg_error(ctx->ins, "Could not marshal msgpack to output string");
+        flb_plg_error(ctx->ins, "Could not marshal msgpack to output string (ctx->log_key = %p)", ctx->log_key);
         FLB_OUTPUT_RETURN(FLB_ERROR);
     }
     chunk_size = flb_sds_len(chunk);

@@ -25,6 +25,8 @@
 #include <chunkio/chunkio.h>
 #include <chunkio/cio_log.h>
 
+static void (*fallback_log_cb)(void *, int, const char *, int, const char *) = NULL;
+
 void cio_log_print(void *ctx, int level, const char *file, int line,
                    const char *fmt, ...)
 {
@@ -35,6 +37,10 @@ void cio_log_print(void *ctx, int level, const char *file, int line,
 
     if (!cio->log_cb) {
        return;
+    }
+
+    if (fallback_log_cb == NULL) {
+        fallback_log_cb = cio->log_cb;
     }
 
     if (level > cio->log_level) {
@@ -55,10 +61,21 @@ void cio_log_print(void *ctx, int level, const char *file, int line,
 int cio_errno_print(int errnum, const char *file, int line)
 {
     char buf[256];
+    char buf2[512];
 
     strerror_r(errnum, buf, sizeof(buf) - 1);
-    fprintf(stderr, "[%s:%i errno=%i] %s\n",
-            file, line, errnum, buf);
+
+    if (fallback_log_cb != NULL) {
+        snprintf(buf2, sizeof(buf2) - 1, "[errno=%i] %s",
+                errnum, buf);
+
+        fallback_log_cb(NULL, CIO_LOG_ERROR, file, line, buf2);
+    }
+    else {
+        fprintf(stderr, "[%s:%i errno=%i] %s\n",
+                file, line, errnum, buf);
+    }
+
     return 0;
 }
 
