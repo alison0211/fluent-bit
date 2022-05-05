@@ -48,6 +48,9 @@ int cio_meta_write(struct cio_chunk *ch, char *buf, size_t size)
     struct cio_memfs *mf;
 
     if (size > 65535) {
+        cio_errno();
+        fprintf(stderr, "maximum meta size exceeded\n");
+        exit(0);
         return -1;
     }
 
