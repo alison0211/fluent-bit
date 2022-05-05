@@ -817,6 +817,8 @@ flb_sds_t flb_pack_msgpack_to_json_format(const char *data, uint64_t bytes,
     /* Iterate the original buffer and perform adjustments */
     records = flb_mp_count(data, bytes);
     if (records <= 0) {
+        flb_error("[leo's debug] %s:%d", __FILE__, __LINE__);
+
         return NULL;
     }
 
@@ -825,6 +827,7 @@ flb_sds_t flb_pack_msgpack_to_json_format(const char *data, uint64_t bytes,
         json_format == FLB_PACK_JSON_FORMAT_STREAM) {
         out_buf = flb_sds_create_size(bytes + bytes / 4);
         if (!out_buf) {
+            flb_error("[leo's debug] %s:%d", __FILE__, __LINE__);
             flb_errno();
             return NULL;
         }
@@ -956,6 +959,7 @@ flb_sds_t flb_pack_msgpack_to_json_format(const char *data, uint64_t bytes,
             /* Encode current record into JSON in a temporary variable */
             out_js = flb_msgpack_raw_to_json_sds(tmp_sbuf.data, tmp_sbuf.size);
             if (!out_js) {
+flb_error("[leo's debug] %s:%d", __FILE__, __LINE__);
                 flb_sds_destroy(out_buf);
                 msgpack_sbuffer_destroy(&tmp_sbuf);
                 msgpack_unpacked_destroy(&result);
@@ -968,6 +972,7 @@ flb_sds_t flb_pack_msgpack_to_json_format(const char *data, uint64_t bytes,
              */
             out_tmp = flb_sds_cat(out_buf, out_js, flb_sds_len(out_js));
             if (!out_tmp) {
+flb_error("[leo's debug] %s:%d", __FILE__, __LINE__);
                 flb_sds_destroy(out_js);
                 flb_sds_destroy(out_buf);
                 msgpack_sbuffer_destroy(&tmp_sbuf);
@@ -987,6 +992,7 @@ flb_sds_t flb_pack_msgpack_to_json_format(const char *data, uint64_t bytes,
             if (json_format == FLB_PACK_JSON_FORMAT_LINES) {
                 out_tmp = flb_sds_cat(out_buf, "\n", 1);
                 if (!out_tmp) {
+flb_error("[leo's debug] %s:%d", __FILE__, __LINE__);
                     flb_sds_destroy(out_buf);
                     msgpack_sbuffer_destroy(&tmp_sbuf);
                     msgpack_unpacked_destroy(&result);
@@ -1009,6 +1015,7 @@ flb_sds_t flb_pack_msgpack_to_json_format(const char *data, uint64_t bytes,
         msgpack_sbuffer_destroy(&tmp_sbuf);
 
         if (!out_buf) {
+flb_error("[leo's debug] %s:%d", __FILE__, __LINE__);
             return NULL;
         }
     }
@@ -1017,6 +1024,7 @@ flb_sds_t flb_pack_msgpack_to_json_format(const char *data, uint64_t bytes,
     }
 
     if (out_buf && flb_sds_len(out_buf) == 0) {
+flb_error("[leo's debug] %s:%d", __FILE__, __LINE__);
         flb_sds_destroy(out_buf);
         return NULL;
     }
