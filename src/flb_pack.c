@@ -1011,6 +1011,8 @@ flb_error("[leo's debug] %s:%d", __FILE__, __LINE__);
 
     /* Format to JSON */
     if (json_format == FLB_PACK_JSON_FORMAT_JSON) {
+flb_error("[leo's debug] %s:%d - calling flb_msgpack_raw_to_json_sds", __FILE__, __LINE__);
+
         out_buf = flb_msgpack_raw_to_json_sds(tmp_sbuf.data, tmp_sbuf.size);
         msgpack_sbuffer_destroy(&tmp_sbuf);
 
@@ -1024,7 +1026,7 @@ flb_error("[leo's debug] %s:%d", __FILE__, __LINE__);
     }
 
     if (out_buf && flb_sds_len(out_buf) == 0) {
-flb_error("[leo's debug] %s:%d", __FILE__, __LINE__);
+flb_error("[leo's debug] %s:%d - data = %p | bytes = %zu", __FILE__, __LINE__, data, bytes);
         flb_sds_destroy(out_buf);
         return NULL;
     }
