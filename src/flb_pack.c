@@ -787,6 +787,53 @@ int flb_pack_to_json_date_type(const char *str)
     return -1;
 }
 
+static inline void tmp_log_clear(char *buffer, size_t buffer_size, size_t *buffer_index)
+{
+    memset(buffer, 0, buffer_size);
+
+    *buffer_index = 0;
+}
+
+static inline int tmp_log_push(char *buffer, size_t buffer_size, size_t *buffer_index,
+                               char *format_string, ...)
+{
+    int     required_space;
+    va_list args;
+
+    va_start(args, format_string);
+
+    required_space = vsnprintf(NULL, 0, format_string, args);
+
+    if (required_space < 0) {
+        flb_error("[leo's debug] %s:%d - required_space = %d", __FILE__, __LINE__, required_space);
+
+        va_end(args);
+
+        return -1;
+    }
+
+    if ((*buffer_index + required_space) >= buffer_size) {
+        flb_error("[leo's debug] %s:%d - insufficient buffer space, required_space = %d | index = %zu | size = %zu", __FILE__, __LINE__, required_space, *buffer_index, buffer_size);
+
+        va_end(args);
+
+        return -2;
+    }
+
+    required_space = vsnprintf(&buffer[*buffer_index], (buffer_size - *buffer_index), format_string, args);
+
+    if (required_space < 0) {
+        flb_error("[leo's debug] %s:%d - unrecognized error while appending log entry", __FILE__, __LINE__);
+
+        va_end(args);
+
+        return -2;
+    }
+
+    va_end(args);
+
+    return 0;
+}
 
 flb_sds_t flb_pack_msgpack_to_json_format(const char *data, uint64_t bytes,
                                           int json_format, int date_format,
@@ -814,6 +861,11 @@ flb_sds_t flb_pack_msgpack_to_json_format(const char *data, uint64_t bytes,
     struct tm tm;
     struct flb_time tms;
 
+static __thread char   tmp_log_buffer[8192];
+static __thread size_t tmp_log_index;
+
+tmp_log_clear(tmp_log_buffer, sizeof(tmp_log_buffer), &tmp_log_index);
+
     /* Iterate the original buffer and perform adjustments */
     records = flb_mp_count(data, bytes);
     if (records <= 0) {
@@ -831,6 +883,10 @@ flb_sds_t flb_pack_msgpack_to_json_format(const char *data, uint64_t bytes,
             flb_errno();
             return NULL;
         }
+
+tmp_log_push(tmp_log_buffer, sizeof(tmp_log_buffer), &tmp_log_index,
+             "Allocated %zu bytes at %p | ", (bytes + bytes / 4), out_buf);
+
     }
 
     /* Create temporary msgpack buffer */
@@ -856,9 +912,16 @@ flb_sds_t flb_pack_msgpack_to_json_format(const char *data, uint64_t bytes,
         /* Each array must have two entries: time and record */
         root = result.data;
         if (root.type != MSGPACK_OBJECT_ARRAY) {
+
+tmp_log_push(tmp_log_buffer, sizeof(tmp_log_buffer), &tmp_log_index,
+             "Skipping non array | ");
+
             continue;
         }
         if (root.via.array.size != 2) {
+tmp_log_push(tmp_log_buffer, sizeof(tmp_log_buffer), &tmp_log_index,
+             "Skipping wrong size array | ");
+
             continue;
         }
 
@@ -868,6 +931,9 @@ flb_sds_t flb_pack_msgpack_to_json_format(const char *data, uint64_t bytes,
         /* Get the record/map */
         map = root.via.array.ptr[1];
         if (map.type != MSGPACK_OBJECT_MAP) {
+tmp_log_push(tmp_log_buffer, sizeof(tmp_log_buffer), &tmp_log_index,
+             "Skipping not map | ");
+
             continue;
         }
         map_size = map.via.map.size;
@@ -922,6 +988,10 @@ flb_sds_t flb_pack_msgpack_to_json_format(const char *data, uint64_t bytes,
                 break;
             }
         }
+        else {
+tmp_log_push(tmp_log_buffer, sizeof(tmp_log_buffer), &tmp_log_index,
+             "Skipping date key missing | ");
+        }
 
         /* Append remaining keys/values */
         for (i = 0; i < map_size; i++) {
@@ -956,6 +1026,9 @@ flb_sds_t flb_pack_msgpack_to_json_format(const char *data, uint64_t bytes,
         if (json_format == FLB_PACK_JSON_FORMAT_LINES ||
             json_format == FLB_PACK_JSON_FORMAT_STREAM) {
 
+tmp_log_push(tmp_log_buffer, sizeof(tmp_log_buffer), &tmp_log_index,
+             "CP %d | ", __LINE__);
+
             /* Encode current record into JSON in a temporary variable */
             out_js = flb_msgpack_raw_to_json_sds(tmp_sbuf.data, tmp_sbuf.size);
             if (!out_js) {
@@ -985,6 +1058,9 @@ flb_error("[leo's debug] %s:%d", __FILE__, __LINE__);
 
             /* If a realloc happened, check the returned address */
             if (out_tmp != out_buf) {
+tmp_log_push(tmp_log_buffer, sizeof(tmp_log_buffer), &tmp_log_index,
+             "CP %d (realloc) | ", __LINE__);
+
                 out_buf = out_tmp;
             }
 
@@ -999,6 +1075,9 @@ flb_error("[leo's debug] %s:%d", __FILE__, __LINE__);
                     return NULL;
                 }
                 if (out_tmp != out_buf) {
+tmp_log_push(tmp_log_buffer, sizeof(tmp_log_buffer), &tmp_log_index,
+             "CP %d (realloc) | ", __LINE__);
+
                     out_buf = out_tmp;
                 }
             }
@@ -1027,6 +1106,8 @@ flb_error("[leo's debug] %s:%d", __FILE__, __LINE__);
 
     if (out_buf && flb_sds_len(out_buf) == 0) {
 flb_error("[leo's debug] %s:%d - data = %p | bytes = %zu", __FILE__, __LINE__, data, bytes);
+flb_error("[leo's debug] %s:%d - LOG = %s", __FILE__, __LINE__, tmp_log_buffer);
+
         flb_sds_destroy(out_buf);
         return NULL;
     }
