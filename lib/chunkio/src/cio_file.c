@@ -812,6 +812,7 @@ int cio_file_write(struct cio_chunk *ch, const void *buf, size_t count)
     size_t av_size;
     size_t new_size;
     struct cio_file *cf = (struct cio_file *) ch->backend;
+    int original_chunk_status;
 
     if (count == 0) {
         /* do nothing */
@@ -822,11 +823,15 @@ int cio_file_write(struct cio_chunk *ch, const void *buf, size_t count)
         return -1;
     }
 
+    original_chunk_status = cio_file_is_up(ch, cf);
+
+/*
     if (cio_chunk_is_up(ch) == CIO_FALSE) {
         cio_log_error(ch->ctx, "[cio file] file is not mmap()ed: %s:%s",
                       ch->st->name, ch->name);
         return -1;
     }
+*/
 
     /* get available size */
     av_size = get_available_size(cf, &meta_len);
@@ -847,12 +852,22 @@ int cio_file_write(struct cio_chunk *ch, const void *buf, size_t count)
             cio_errno();
             cio_log_error(ch->ctx,
                           "[cio_file] error setting new file size on write");
+
+if (original_chunk_status == CIO_FALSE) {
+    cio_chunk_down(ch);
+}
+
             return -1;
         }
         /* OSX mman does not implement mremap or MREMAP_MAYMOVE. */
 #ifndef MREMAP_MAYMOVE
         if (munmap(cf->map, cf->alloc_size) == -1) {
             cio_errno();
+
+if (original_chunk_status == CIO_FALSE) {
+    cio_chunk_down(ch);
+}
+
             return -1;
         }
         tmp = mmap(0, new_size, PROT_READ | PROT_WRITE, MAP_SHARED, cf->fd, 0);
@@ -866,6 +881,11 @@ int cio_file_write(struct cio_chunk *ch, const void *buf, size_t count)
                           "[cio file] data exceeds available space "
                           "(alloc=%lu current_size=%lu write_size=%lu)",
                           cf->alloc_size, cf->data_size, count);
+
+if (original_chunk_status == CIO_FALSE) {
+    cio_chunk_down(ch);
+}
+
             return -1;
         }
 
@@ -886,6 +906,10 @@ int cio_file_write(struct cio_chunk *ch, const void *buf, size_t count)
 
     cf->data_size += count;
     cf->synced = CIO_FALSE;
+
+if (original_chunk_status == CIO_FALSE) {
+    cio_chunk_down(ch);
+}
 
     return 0;
 }

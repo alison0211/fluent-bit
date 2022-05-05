@@ -446,6 +446,8 @@ struct flb_fstore *flb_fstore_create(char *path, int store_type)
     fs->store_type = store_type;
     mk_list_init(&fs->streams);
 
+    // cio_set_max_chunks_up(cio, 256);
+
     /* Map Chunk I/O streams and chunks into fstore context */
     load_references(fs);
 
