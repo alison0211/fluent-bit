@@ -903,6 +903,7 @@ int cio_file_write_metadata(struct cio_chunk *ch, char *buf, size_t size)
     struct cio_file *cf = ch->backend;
 
     if (cio_file_is_up(ch, cf) == CIO_FALSE) {
+        cio_log_error(ch->ctx, "cannot write meta because the chunk is down");
         return -1;
     }
 
@@ -942,6 +943,8 @@ int cio_file_write_metadata(struct cio_chunk *ch, char *buf, size_t size)
 #ifndef MREMAP_MAYMOVE
         if (munmap(cf->map, cf->alloc_size) == -1) {
             cio_errno();
+            cio_log_error(ch->ctx, "could not unmap chunk file");
+
             return -1;
         }
         tmp = mmap(0, new_size, PROT_READ | PROT_WRITE, MAP_SHARED, cf->fd, 0);
@@ -965,6 +968,7 @@ int cio_file_write_metadata(struct cio_chunk *ch, char *buf, size_t size)
         ret = cio_file_fs_size_change(cf, new_size);
         if (ret == -1) {
             cio_errno();
+            cio_log_error(ch->ctx, "could not change fs size");
             return -1;
         }
     }
