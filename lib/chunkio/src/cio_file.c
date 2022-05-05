@@ -901,10 +901,18 @@ int cio_file_write_metadata(struct cio_chunk *ch, char *buf, size_t size)
     size_t meta_av;
     void *tmp;
     struct cio_file *cf = ch->backend;
+    int original_chunk_status;
 
-    if (cio_file_is_up(ch, cf) == CIO_FALSE) {
-        cio_log_error(ch->ctx, "cannot write meta because the chunk is down");
-        return -1;
+    original_chunk_status = cio_file_is_up(ch, cf);
+
+    if (original_chunk_status == CIO_FALSE) {
+        ret = cio_chunk_up_force(ch);
+
+        if (ret != CIO_OK ){
+            cio_log_error(ch->ctx, "cannot write meta because the chunk is down and couldn't be brought up");
+
+            return -1;
+        }
     }
 
     /* Get metadata pointer */
@@ -923,6 +931,10 @@ int cio_file_write_metadata(struct cio_chunk *ch, char *buf, size_t size)
         new_content_data = meta + size;
         memmove(new_content_data, cur_content_data, cf->data_size);
         adjust_layout(ch, cf, size);
+
+if (original_chunk_status == CIO_FALSE) {
+    cio_chunk_down(ch);
+}
 
         return 0;
     }
@@ -958,8 +970,8 @@ int cio_file_write_metadata(struct cio_chunk *ch, char *buf, size_t size)
                           "[cio meta] data exceeds available space "
                           "(alloc=%lu current_size=%lu meta_size=%lu)",
                           cf->alloc_size, cf->data_size, size);
-            return -1;
 
+            return -1;
         }
         cf->map = tmp;
         cf->alloc_size = new_size;
@@ -984,6 +996,10 @@ int cio_file_write_metadata(struct cio_chunk *ch, char *buf, size_t size)
     /* copy new metadata */
     memcpy(meta, buf, size);
     adjust_layout(ch, cf, size);
+
+    if (original_chunk_status == CIO_FALSE) {
+        cio_chunk_down(ch);
+    }
 
     return 0;
 }
