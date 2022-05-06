@@ -1297,6 +1297,18 @@ static int cb_modify_filter(const void *data, size_t bytes,
     int modifications = 0;
     int total_modifications = 0;
 
+    if (bytes > 0) {
+        if (data[0] == 0) {
+            int *temp;
+
+            flb_plg_error(i_ins, "Corrupted buffer");
+            sleep(5);
+
+            temp = NULL;
+            temp[0] = 1;
+        }
+    }
+
     msgpack_sbuffer buffer;
     msgpack_sbuffer_init(&buffer);
 
