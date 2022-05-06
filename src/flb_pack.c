@@ -1144,7 +1144,7 @@ flb_error("[leo's debug] %s:%d - LOG = %s", __FILE__, __LINE__, tmp_log_buffer);
         }
     }
 
-    if (failure_detected)
+    if (failure_detected) {
         flb_sds_destroy(out_buf);
         return NULL;
     }
