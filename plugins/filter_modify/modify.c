@@ -1298,10 +1298,10 @@ static int cb_modify_filter(const void *data, size_t bytes,
     int total_modifications = 0;
 
     if (bytes > 0) {
-        if (data[0] == 0) {
+        if (((unsigned char *)data)[0] == 0) {
             int *temp;
 
-            flb_plg_error(i_ins, "Corrupted buffer");
+            flb_plg_error(i_ins, "Corrupted buffer 1");
             sleep(5);
 
             temp = NULL;
@@ -1348,6 +1348,18 @@ static int cb_modify_filter(const void *data, size_t bytes,
 
     *out_buf = buffer.data;
     *out_size = buffer.size;
+
+    if (*out_size > 0) {
+        if (((unsigned char *)*out_buf)[0] == 0) {
+            int *temp;
+
+            flb_plg_error(i_ins, "Corrupted buffer 1");
+            sleep(5);
+
+            temp = NULL;
+            temp[0] = 1;
+        }
+    }
 
     return FLB_FILTER_MODIFIED;
 }
