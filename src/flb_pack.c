@@ -915,7 +915,7 @@ tmp_log_push(tmp_log_buffer, sizeof(tmp_log_buffer), &tmp_log_index,
         if (root.type != MSGPACK_OBJECT_ARRAY) {
 
 tmp_log_push(tmp_log_buffer, sizeof(tmp_log_buffer), &tmp_log_index,
-             "Skipping non array | ");
+             "Skipping non array (%d)| ");
 
             continue;
         }
@@ -1108,6 +1108,24 @@ flb_error("[leo's debug] %s:%d", __FILE__, __LINE__);
     if (out_buf && flb_sds_len(out_buf) == 0) {
 flb_error("[leo's debug] %s:%d - data = %p | bytes = %zu", __FILE__, __LINE__, data, bytes);
 flb_error("[leo's debug] %s:%d - LOG = %s", __FILE__, __LINE__, tmp_log_buffer);
+
+{
+    static int file_index = 0;
+    char file_name[255];
+    FILE *file_handle;
+
+    snprintf(file_name, sizeof(file_name) - 1, "/var/log/flb-s3/dump_%d_%p.bin",
+                ++file_index, data);
+
+flb_error("[leo's debug] %s:%d - DUMP = %s", __FILE__, __LINE__, file_name);
+
+    file_handle = fopen(file_name, "wb+");
+
+    if (file_handle != NULL) {
+        fwrite(data, 1, bytes, file_handle);
+        fclose(file_handle);
+    }
+}
 
         flb_sds_destroy(out_buf);
         return NULL;
