@@ -1105,31 +1105,50 @@ flb_error("[leo's debug] %s:%d", __FILE__, __LINE__);
         msgpack_sbuffer_destroy(&tmp_sbuf);
     }
 
+{
+    int dump_required;
+    int failure_detected;
+
+    static int healthy_samples_dumped = 0;
+
+    dump_required = 0;
+    failure_detected = 0;
+
     if (out_buf && flb_sds_len(out_buf) == 0) {
 flb_error("[leo's debug] %s:%d - data = %p | bytes = %zu", __FILE__, __LINE__, data, bytes);
 flb_error("[leo's debug] %s:%d - LOG = %s", __FILE__, __LINE__, tmp_log_buffer);
 
-{
-    static int file_index = 0;
-    char file_name[255];
-    FILE *file_handle;
-
-    snprintf(file_name, sizeof(file_name) - 1, "/var/log/flb-s3/dump_%d_%p.bin",
-                ++file_index, data);
-
-flb_error("[leo's debug] %s:%d - DUMP = %s", __FILE__, __LINE__, file_name);
-
-    file_handle = fopen(file_name, "wb+");
-
-    if (file_handle != NULL) {
-        fwrite(data, 1, bytes, file_handle);
-        fclose(file_handle);
+        dump_required = 1;
+        failure_detected = 1;
     }
-}
+    else if (healthy_samples_dumped < 10) {
+        healthy_samples_dumped++;
+        dump_required = 1;
+    }
 
+    if (dump_required) {
+        static int file_index = 0;
+        char file_name[255];
+        FILE *file_handle;
+
+        snprintf(file_name, sizeof(file_name) - 1, "/var/log/flb-s3/dump_%d_%p.bin",
+                    ++file_index, data);
+
+    flb_error("[leo's debug] %s:%d - DUMP = %s", __FILE__, __LINE__, file_name);
+
+        file_handle = fopen(file_name, "wb+");
+
+        if (file_handle != NULL) {
+            fwrite(data, 1, bytes, file_handle);
+            fclose(file_handle);
+        }
+    }
+
+    if (failure_detected)
         flb_sds_destroy(out_buf);
         return NULL;
     }
+}
 
     return out_buf;
 }
