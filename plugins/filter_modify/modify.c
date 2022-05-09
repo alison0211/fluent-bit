@@ -1353,7 +1353,7 @@ static int cb_modify_filter(const void *data, size_t bytes,
         if (((unsigned char *)*out_buf)[0] == 0) {
             // int *temp;
 
-            flb_plg_error(i_ins, "Corrupted buffer 1");
+            flb_plg_error(ctx->ins, "Corrupted buffer 1");
             // sleep(5);
 
             // temp = NULL;
