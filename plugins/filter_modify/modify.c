@@ -1297,17 +1297,17 @@ static int cb_modify_filter(const void *data, size_t bytes,
     int modifications = 0;
     int total_modifications = 0;
 
-    // if (bytes > 0) {
-    //     if (((unsigned char *)data)[0] == 0) {
+    if (bytes > 0) {
+        if (((unsigned char *)data)[0] == 0) {
     //         // int *temp;
 
-    //         flb_plg_error(i_ins, "Corrupted buffer 1");
+            flb_plg_error(ctx->ins, "Corrupted buffer 1");
     //         // sleep(5);
 
     //         // temp = NULL;
     //         // temp[0] = 1;
-    //     }
-    // }
+        }
+    }
 
     msgpack_sbuffer buffer;
     msgpack_sbuffer_init(&buffer);
@@ -1342,6 +1342,7 @@ static int cb_modify_filter(const void *data, size_t bytes,
     msgpack_unpacked_destroy(&result);
 
     if(total_modifications == 0) {
+        flb_plg_error(ctx->ins, "No modifications");
         msgpack_sbuffer_destroy(&buffer);
         return FLB_FILTER_NOTOUCH;
     }
@@ -1353,7 +1354,7 @@ static int cb_modify_filter(const void *data, size_t bytes,
         if (((unsigned char *)*out_buf)[0] == 0) {
             // int *temp;
 
-            flb_plg_error(ctx->ins, "Corrupted buffer 1");
+            flb_plg_error(ctx->ins, "Corrupted buffer 2");
             // sleep(5);
 
             // temp = NULL;
